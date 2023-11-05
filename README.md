@@ -4,6 +4,22 @@ Official implementation of "[Dataset Quantization](https://arxiv.org/abs/2308.10
 
 <p align="center"><img src="./figs/effects.png" align="center" width="650"></p>
 
+## Dataset Statistics
+
+
+#### CIFAR 10
+
+1. 60K RGB Images 
+2. 32x32
+3. 10 classes
+4. 6K per class
+5. 50K Train, 10K Test
+
+#### Imagenet 1K
+1. Train 1,281,167
+2. Validation 50,000
+3. 1000 Classes
+
 **Dataset Quantization**
 
 [Daquan Zhou*](https://scholar.google.com/citations?user=DdCAbWwAAAAJ&hl=en), [Kai Wang*](https://kaiwang960112.github.io/), [Jianyang Gu*](https://vimar-gu.github.io/), [Xiangyu Peng](https://scholar.google.com/citations?user=KRUTk7sAAAAJ&hl=en), [Dongze Lian](https://dongzelian.com/), [Yifan Zhang](https://sites.google.com/view/yifan-zhang), [Yang You<sup>+</sup>](https://www.comp.nus.edu.sg/~youy/), [Jiashi Feng<sup>+</sup>](https://sites.google.com/site/jshfeng/) (*Equal Contribution, <sup>+</sup>Corresponding Author)
