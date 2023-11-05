@@ -46,9 +46,9 @@ def get_args_parser():
     return parser
 
 
-def prepare_model(chkpt_dir, arch='mae_vit_base_patch16', cam_mask=False):
+def prepare_model(chkpt_dir, args):
     # build model
-    model = getattr(mae_models, arch)(cam_mask=cam_mask)
+    model = getattr(mae_models, args.model)(cam_mask=args.cam_mask, img_size=args.input_size)
     # load model
     checkpoint = torch.load(chkpt_dir, map_location='cpu')
     msg = model.load_state_dict(checkpoint['model'], strict=False)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     ])
 
     chkpt_dir = args.resume
-    model_mae = prepare_model(chkpt_dir, args.model, args.cam_mask)
+    model_mae = prepare_model(chkpt_dir, args)
     model_mae.cuda()
     print('Model loaded.')
     if args.data == 'CIFAR10':

@@ -155,7 +155,7 @@ class MaskedAutoencoderViT(nn.Module):
         """
         N, L, D = x.shape  # batch, length, dim
         len_keep = int(L * (1 - mask_ratio))
-
+        print(len_keep, L)
         amaps = torch.stack([amap[0] for amap in activation_maps])
         amaps = torchvision.transforms.functional.resize(amaps, (14, 14)).view(amaps.shape[0], -1)
 
@@ -208,6 +208,7 @@ class MaskedAutoencoderViT(nn.Module):
 
         with torch.no_grad():
             # embed patches
+            print(x.size())
             x = self.patch_embed(x)
 
             # add pos embed w/o cls token
