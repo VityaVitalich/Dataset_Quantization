@@ -43,7 +43,7 @@ def train(epoch, net, trainloader, criterion, optimizer, device):
         accuracy = correct / total
 
 
-def test(args, best_acc, epoch, net, testloader, criterion, device):
+def test(best_acc, epoch, net, testloader, criterion, device, result_path):
     net.eval()
     test_loss = 0
     accuracy = 0.
@@ -65,37 +65,25 @@ def test(args, best_acc, epoch, net, testloader, criterion, device):
             accuracy = correct / total
 
     # Save checkpoint.
-    if args.result_path != '' and accuracy > best_acc:
-        print('Saving..')
-        state = {
-            'net': net.state_dict(),
-            'acc': accuracy,
-            'epoch': epoch,
-        }
-        if not os.path.isdir(args.result_path):
-            os.mkdir(args.result_path)
-        torch.save(state, os.path.join(args.result_path, 'ckpt.pth'))
+    if accuracy > best_acc:
         best_acc = accuracy
+
+        if result_path != '':
+            print('Saving..')
+            state = {
+                'net': net.state_dict(),
+                'acc': accuracy,
+                'epoch': epoch,
+            }
+            if not os.path.isdir(result_path):
+                os.mkdir(result_path)
+            torch.save(state, os.path.join(result_path, 'ckpt.pth'))
 
     return best_acc
 
-
-def main():
-    parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-    parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-    parser.add_argument('--resume', '-r', action='store_true',
-                        help='resume from checkpoint')
-    parser.add_argument('--batch_size', default=128, type=int)
-    parser.add_argument('--data_dir', default='', type=str)
-    parser.add_argument('--select_indices', default=[], type=str, nargs='+',
-                        help='pre-defined subset indices')
-    parser.add_argument('--result_path', default='', type=str,
-                        help='dynamic save path, leave empty if not saving')
-    args = parser.parse_args()
+def run_experiment(lr, bs, data_dir, selected_indices, result_path=''):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     best_acc = 0  # best test accuracy
-
-    # Data
     print('==> Preparing data..')
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -109,20 +97,20 @@ def main():
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-    if args.data_dir == '':
+    if data_dir == '':
         trainset = torchvision.datasets.CIFAR10(
             root='/data/personal/nus-gjy/data', train=True, download=True, transform=transform_train)
     else:
-        trainset = ImageFolder(root=args.data_dir, transform=transform_train)
+        trainset = ImageFolder(root=data_dir, transform=transform_train)
 
-    if len(args.select_indices) > 0:
+    if len(selected_indices) > 0:
         select_indices = np.array([]).astype(int)
-        for indices in args.select_indices:
+        for indices in selected_indices:
             select_indices = np.append(select_indices, np.load(indices))
         trainset = torch.utils.data.Subset(trainset, select_indices)
 
     trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+        trainset, batch_size=bs, shuffle=True, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(
         root='/data/personal/nus-gjy/data', train=False, download=True, transform=transform_test)
@@ -138,20 +126,42 @@ def main():
         cudnn.benchmark = True
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=args.lr,
+    optimizer = optim.SGD(net.parameters(), lr=lr,
                           momentum=0.9, weight_decay=5e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
-    for epoch in range(200):
+    for epoch in range(150):
         train(epoch, net, trainloader, criterion, optimizer, device)
-        best_acc = test(args, best_acc, epoch, net, testloader, criterion, device)
+        best_acc = test(best_acc, epoch, net, testloader, criterion, device, result_path)
         scheduler.step()
-        if len(args.select_indices) > 0:
-            index_names = '-'.join([index.split('/')[-1][:-4] for index in args.select_indices])
-            with open(osp.join(args.result_path, index_names+'.txt'), 'a') as fp:
+        if len(selected_indices) > 0:
+            index_names = '-'.join([index.split('/')[-1][:-4] for index in selected_indices])
+            with open(osp.join(result_path, index_names+'.txt'), 'a') as fp:
                 fp.write(str(epoch) + ' ' + str(best_acc) + '\n')
-    print(best_acc)
 
+    return best_acc
+
+def main():
+    parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
+    parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+    parser.add_argument('--resume', '-r', action='store_true',
+                        help='resume from checkpoint')
+    parser.add_argument('--batch_size', default=128, type=int)
+    parser.add_argument('--data_dir', default='', type=str)
+    parser.add_argument('--select_indices', default=[], type=str, nargs='+',
+                        help='pre-defined subset indices')
+    parser.add_argument('--result_path', default='', type=str,
+                        help='dynamic save path, leave empty if not saving')
+    args = parser.parse_args()
+
+    print(args)
+    best_acc = run_experiment(args.lr,
+                        args.batch_size,
+                        data_dir=args.data_dir,
+                        selected_indices=args.select_indices, 
+                        result_path=args.result_path)
+
+    print(best_acc)
 
 if __name__ == '__main__':
     main()
